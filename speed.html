@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Meu primeiro aplicativo Vue</title>
+  <script src="https://unpkg.com/vue"></script>
+  <!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.1/css/bulma.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"-->
+
+  <style type="text/css">
+    .risca {
+      text-decoration: line-through;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="container" style="padding: 20px;">
+    <span v-if="error">Erro: {{error}}</span>
+    <h1> speedi: {{speed}}</h1>
+    <h1> speed2: {{speed2}}</h1>
+    <h1> count: {{count}}</h1>
+    <pre>poserror: {{poserror}}</pre>
+  </div>
+
+  <script>
+
+  function calcDistance(p1, p2){
+    const R = 6371; // km
+    const [φ1, φ2, λ1, λ2] = [p1.latitude, p2.latitude, p1.longitude, p2.longitude].map(α => α * Math.PI / 180)
+    const Δφ = φ2 - φ1
+    const Δλ = λ2 - λ1
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    const d = R * c;
+    return d
+  }
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        poserror: null,
+        error: '',
+        coords: null,
+        lastCoords: null,
+        count: 0,
+      },
+      computed: {
+        speed(){
+          const {coords, lastCoords} = this
+          if(coords && lastCoords){
+            const distance = calcDistance(lastCoords, coords)
+            const Δt = (coords.ts - lastCoords.ts) / 3600000.0
+            return Math.round(distance / Δt)
+          }
+          return 0
+        },
+        speed2(){
+          const {coords} = this
+          const s = coords && coords.speed || 0
+          return Math.round(s * 3.6)
+        }
+      },
+      methods: {
+        initGeolocation(){
+          var x = document.getElementById("demo");
+          if (window.navigator.geolocation) {
+            this.fetchPosition()
+          } else {
+            this.error = "Localização geográfica indisponível";
+          }
+        },
+        fetchPosition(){
+          const options = {
+            enableHighAccuracy: true,
+            maximumAge: 0
+          }
+          window.navigator.geolocation.watchPosition(this.setPosition, this.positionError, options);
+        },
+        positionError(err){
+          this.poserror = err
+        },
+        setPosition(position){
+          this.position = position
+          const {
+            accuracy,
+            altitude,
+            altitudeAccuracy,
+            heading,
+            latitude,
+            longitude,
+            speed
+          } = position.coords
+          this.lastCoords = this.coords
+          this.coords = {
+            accuracy,
+            altitude,
+            altitudeAccuracy,
+            heading,
+            latitude,
+            longitude,
+            speed,
+            ts: new Date().getTime()
+          }
+          // setTimeout(this.fetchPosition, 5000)
+          this.count++
+        }
+      },
+      mounted(){
+        this.initGeolocation()
+      }
+    });
+  </script>
+</body>
+</html>

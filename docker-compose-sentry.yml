@@ -1,0 +1,85 @@
+version: '2'
+
+services:
+  sentry-redis:
+    image: redis
+
+  sentry-postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER:sentry
+      POSTGRES_PASSWORD:secret
+      POSTGRES_DBNAME: sentry
+      POSTGRES_DBUSER: sentry
+    volumes:
+     - /var/data/sentry/postgres:/var/lib/postgresql/data:rw
+
+  sentry:
+    image: sentry
+    environment:
+      SENTRY_SECRET_KEY: xxxxxx
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: secret
+      SENTRY_REDIS_HOST: redis
+#    volumes:  # Habilitar depois de copiar o conteudo de dentro de algum container
+#     - /var/data/sentry/etc:/etc/sentry
+    depends_on:
+     - sentry-redis
+     - sentry-postgres
+    links:
+     - sentry-redis:redis
+     - sentry-postgres:postgres
+    ports:
+     - 9000:9000
+    stdin_open: true
+    tty: true
+
+  sentry-worker:
+    image: sentry
+    environment:
+      SENTRY_SECRET_KEY: dd
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: secret
+      SENTRY_REDIS_HOST: redis
+      SENTRY_EMAIL_HOST: smtp.mailgun.org
+      SENTRY_EMAIL_PORT: 587
+      SENTRY_EMAIL_USER: postmaster@yourdomain.com
+      SENTRY_EMAIL_PASSWORD: xxxxxx
+      SENTRY_EMAIL_USE_TLS: "true"
+      SENTRY_MAILGUN_API_KEY: key-xxxxxx
+#    volumes:  # Habilitar depois de copiar o conteudo de dentro de algum container
+#     - /var/data/sentry/etc:/etc/sentry
+    depends_on:
+     - sentry-redis
+     - sentry-postgres
+    links:
+     - sentry-redis:redis
+     - sentry-postgres:postgres
+    command: "run worker"
+
+  sentry-cron:
+    image: sentry
+    environment:
+      SENTRY_SECRET_KEY: xxxxxx
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: secret
+      SENTRY_REDIS_HOST: redis
+#    volumes:  # Habilitar depois de copiar o conteudo de dentro de algum container
+#     - /var/data/sentry/etc:/etc/sentry
+    depends_on:
+     - sentry-redis
+     - sentry-postgres
+    links:
+     - sentry-redis:redis
+     - sentry-postgres:postgres
+    command: "run cron"
+
+# docker-compose -f docker-compose-sentry.yml up
+# (quando subir entra num sentry qqr com "docker exec bash" e roda um "sentry upgrade" pra criar as tabelas no banco)
+# Depois copia o conteudo de /etc/sentry de um container pram /var/data/sentry/etc
+# Edita o /var/data/sentry/etc/sentry.conf.py/sentry.conf.py e addiciona:
+# SENTRY_FEATURES['auth:register'] = False # pra desabilitar 
+# descomenta os volumes acima e faz um docker-compose down / up.

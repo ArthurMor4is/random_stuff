@@ -1,0 +1,29 @@
+<html>
+  <head>
+    <title>Teste - leitura de arquivos com JS</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.23/angular.js"></script>
+    <script>
+      function MyCtrl($scope){
+      
+        $scope.fileChanged = function(elm){
+          var file = elm.files[0];
+          var reader = new FileReader();
+          reader.onload = function(evt){
+            $scope.content = reader.result;
+            $scope.$digest(); //pq a leitura do arquivo eh assincrona
+          }
+          reader.readAsText(file);
+        };
+        
+      }
+    </script>
+  </head>
+  <body ng-app ng-controller="MyCtrl">
+    escolhe um txt pequeno...
+    
+    <!-- Muito obrigado cabeça de ovo https://egghead.io/lessons/angularjs-file-uploads -->
+    <input type="file" onchange="angular.element(this).scope().fileChanged(this)"> 
+    
+    <p>{{content}}</p>
+  </body>
+</html>
